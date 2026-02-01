@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Docker
+*.env
+.env.*
+.dockerignore
+
+# Deployment
+*.exe
+*.msi
