@@ -6,8 +6,15 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
+    command:
+      - 
     environment:
       - NODE_ENV=production
+    networks:
+      - app-network
+  backend:
+    image: ubuntu:22.04  # 使用一个合适的基础镜像
+    command: ./app_linux      # 运行第一个可执行文件
     networks:
       - app-network
 
