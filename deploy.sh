@@ -19,11 +19,11 @@ case "$1" in
         
         # Stop existing services
         echo "Stopping existing services..."
-        docker-compose down 2>/dev/null || true
+        docker-compose -f /home/docker-app/docker-compose.yml down 2>/dev/null || true
         
         # Start services with build
         echo "Building and starting services..."
-        docker-compose up -d --build
+        docker-compose -f /home/docker-app/docker-compose.yml up -d --build
         
         echo "✅ Deployment completed!"
         echo "Application is running on http://localhost"
@@ -31,8 +31,8 @@ case "$1" in
     
     clean)
         echo "🧹 Cleaning up Docker Compose services..."
-        docker-compose down -v 2>/dev/null || true
-        docker-compose rm -f 2>/dev/null || true
+        docker-compose -f /home/docker-app/docker-compose.yml down -v 2>/dev/null || true
+        docker-compose -f /home/docker-app/docker-compose.yml rm -f 2>/dev/null || true
         echo "✅ Cleanup completed!"
         ;;
     
