@@ -19,11 +19,11 @@ case "$1" in
         
         # Stop existing services
         echo "Stopping existing services..."
-        docker compose down 2>/dev/null || true
+        docker-compose down 2>/dev/null || true
         
         # Start services with build
         echo "Building and starting services..."
-        docker compose up -d --build
+        docker-compose up -d --build
         
         echo "✅ Deployment completed!"
         echo "Application is running on http://localhost"
