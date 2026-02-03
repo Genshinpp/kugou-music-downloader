@@ -1,5 +1,8 @@
 version: '3.8'
 
+include:
+    - ../music-downloader-backend/docker-compose.yml
+
 services:
   music-downloader:
     build: .
