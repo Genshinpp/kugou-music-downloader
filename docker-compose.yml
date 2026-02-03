@@ -6,8 +6,6 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
-    command:
-      - 
     environment:
       - NODE_ENV=production
     networks:
