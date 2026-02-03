@@ -1,5 +1,7 @@
 // src/services/api.js
-const BASE_URL = 'http://localhost:3000';
+import { getBaseUrl } from '../utils/env';
+
+const BASE_URL = getBaseUrl();
 
 
 export const request = async (endpoint, options = {}) => {

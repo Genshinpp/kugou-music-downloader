@@ -24,9 +24,11 @@ dist-ssr
 *.sw?
 
 # Docker
-*.env
-.env.*
 .dockerignore
+
+# Environment files
+.env.local
+.env.*.local
 
 # Deployment
 *.exe
