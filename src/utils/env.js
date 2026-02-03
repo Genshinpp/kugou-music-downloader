@@ -7,13 +7,13 @@ const isProduction = import.meta.env.PROD;
 
 // 获取 API 基础地址
 export const getBaseUrl = () => {
-  if (isDevelopment) {
-    // 开发环境
-    return import.meta.env.VITE_API_BASE_URL_DEV;
-  } else {
-    // 生产环境
-    return import.meta.env.VITE_API_BASE_URL_PROD;
-  }
+  const baseUrl = isDevelopment 
+    ? import.meta.env.VITE_API_BASE_URL_DEV 
+    : import.meta.env.VITE_API_BASE_URL_PROD;
+  
+  // 如果是相对路径（如 /api），则使用当前域名
+  // 如果是绝对路径，则直接使用
+  return baseUrl.startsWith('/') ? '' : baseUrl;
 };
 
 // 环境信息导出
