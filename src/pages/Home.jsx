@@ -3,20 +3,20 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Spin, Empty } from 'antd';
 import { SearchOutlined, PlayCircleOutlined, DownloadOutlined, UserOutlined, DatabaseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { request, getSongUrl } from '../services/api';
+import { usePlayer } from '../contexts/PlayerContext';
 
 const Home = () => {
   const [songs, setSongs] = useState([]);
   const [keyword, setKeyword] = useState('');
-  const [currentSong, setCurrentSong] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLazyLoading, setIsLazyLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize] = useState(15);
   const [hasMore, setHasMore] = useState(true);
-  const audioRef = useRef(new Audio());
   const observerRef = useRef();
+  
+  const { playSong } = usePlayer();
 
   const searchSongs = useCallback(async (page = 1) => {
     // 如果没有关键词且不是分页操作，提示用户输入
@@ -71,15 +71,19 @@ const Home = () => {
     if (node) observerRef.current.observe(node);
   }, [isLoading, isLazyLoading, hasMore, loadMoreSongs]);
 
-  const playSong = async (song) => {
+  const handlePlaySong = async (song) => {
     try {
       const res = await getSongUrl(song.FileHash);
       const url = res.backupUrl[0];
       
-      audioRef.current.src = url;
-      audioRef.current.play();
-      setIsPlaying(true);
-      setCurrentSong(song);
+      // 使用新的播放器上下文
+      playSong({
+        ...song,
+        title: song.OriSongName,
+        artist: song.SingerName,
+        album: song.AlbumName,
+        url: url
+      }, songs, songs.findIndex(s => s.FileHash === song.FileHash));
     } catch (error) {
       console.error('播放失败:', error);
       alert('播放失败，请稍后重试');
@@ -137,7 +141,7 @@ const Home = () => {
           {total > 0 && (
             <div className="results-info">
               <span>共找到 {total} 首歌曲</span>
-              <span>第 {currentPage} 页</span>
+              <span>共 {currentPage} 页</span>
             </div>
           )}
         </div>
@@ -169,7 +173,7 @@ const Home = () => {
                     <div className="song-actions">
                       <button 
                         className="action-button glass-button play-btn"
-                        onClick={() => playSong(song)}
+                        onClick={() => handlePlaySong(song)}
                       >
                         <PlayCircleOutlined />
                         播放
@@ -216,31 +220,7 @@ const Home = () => {
 
       </div>
 
-      {/* 播放器 */}
-      {currentSong && (
-        <div className="audio-player glass-card">
-          <div className="player-info">
-            <div className="now-playing">
-              <span className="playing-icon">♪</span>
-              <div>
-                <div className="song-name">{currentSong.OriSongName}</div>
-                <div className="artist-name">{currentSong.SingerName}</div>
-              </div>
-            </div>
-          </div>
-          <div className="player-controls">
-            <button 
-              onClick={() => {
-                isPlaying ? audioRef.current.pause() : audioRef.current.play();
-                setIsPlaying(!isPlaying);
-              }}
-              className="control-button glass-button primary"
-            >
-              {isPlaying ? '⏸️ 暂停' : '▶️ 播放'}
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

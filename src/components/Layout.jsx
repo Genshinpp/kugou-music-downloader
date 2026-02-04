@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import BottomPlayer from './BottomPlayer';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -57,6 +58,9 @@ const Layout = ({ children }) => {
           <p>© 2026 音乐下载器 - 享受高品质音乐体验</p>
         </footer>
       </div>
+      
+      {/* 底部播放器 */}
+      <BottomPlayer />
     </div>
   );
 };
