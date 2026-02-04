@@ -17,6 +17,7 @@ export const request = async (endpoint, options = {}) => {
         // 其他相对路径，拼接基础 URL
         url = `${BASE_URL}${endpoint}`;
     }
+    console.log(url)
     const auth = localStorage.getItem('auth');
     // 将store中的cookie转换为字符串，并设置到请求头中
     const cookie = auth ? Object.entries(auth).map(([k, v]) => `${k}=${v}`).join('; ') : '';
