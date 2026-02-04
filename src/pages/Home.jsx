@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Spin, Empty } from 'antd';
+import { Spin, Empty, message } from 'antd';
 import { PlayCircleOutlined, DownloadOutlined, UserOutlined, DatabaseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { request, getSongUrl, getAlbumImages, downloadSong } from '../services/api';
 import { generateMusicFilename } from '../utils/filename';
@@ -137,7 +137,7 @@ const Home = () => {
       }
     } catch (error) {
       console.error('搜索失败:', error);
-      alert('搜索失败，请稍后重试');
+      message.error('搜索失败，请稍后重试');
     } finally {
       setIsLoading(false);
       setIsLazyLoading(false);
@@ -197,7 +197,7 @@ const Home = () => {
       }, songs, songs.findIndex(s => s.FileHash === song.FileHash));
     } catch (error) {
       console.error('播放失败:', error);
-      alert('播放失败，请稍后重试');
+      message.error('播放失败，请稍后重试');
     }
   };
 
@@ -225,7 +225,7 @@ const Home = () => {
       
     } catch (error) {
       console.error('下载失败:', error);
-      alert(`下载失败: ${error.message}`);
+      message.error(`下载失败: ${error.message}`);
       
       // 恢复按钮状态
       const downloadBtn = event.target.closest('.action-button');

@@ -1,6 +1,7 @@
 // src/components/Login.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 import { useAuth } from '../contexts/AuthContext';
 import { request } from '../services/api';
 
@@ -29,7 +30,7 @@ export default function Login() {
 
   const handleSendCode = async () => {
     if (!mobile) {
-      alert('请输入手机号');
+      message.warning('请输入手机号');
       return;
     }
     
@@ -39,10 +40,10 @@ export default function Login() {
       setIsLoading(true);
       await request(`/captcha/sent?mobile=${mobile}`);
       setCountdown(60);
-      alert('验证码已发送');
+      message.success('验证码已发送');
     } catch (error) {
       console.error('发送验证码失败:', error);
-      alert('发送失败，请稍后重试');
+      message.error('发送失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +51,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!mobile || !code) {
-      alert('请输入手机号和验证码');
+      message.warning('请输入手机号和验证码');
       return;
     }
 
@@ -62,7 +63,7 @@ export default function Login() {
       navigate('/', { replace: true });
     } catch (error) {
       console.error('登录失败:', error);
-      alert('登录失败，请检查手机号和验证码');
+      message.error('登录失败，请检查手机号和验证码');
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +119,7 @@ export default function Login() {
               <button 
                 onClick={handleSendCode}
                 disabled={isLoading || countdown > 0}
-                className="send-code-btn glass-button"
+                className="send-code-btn glass-button primary"
               >
                 {countdown > 0 ? `${countdown}s` : '获取验证码'}
               </button>

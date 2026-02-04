@@ -1,5 +1,6 @@
 // src/contexts/SearchContext.jsx
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { message } from 'antd';
 
 const SearchContext = createContext();
 
@@ -17,7 +18,7 @@ export const SearchProvider = ({ children }) => {
 
   const handleSearch = useCallback((keyword) => {
     if (!keyword?.trim()) {
-      alert('请输入搜索关键词');
+      message.warning('请输入搜索关键词');
       return;
     }
     
