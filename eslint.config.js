@@ -26,4 +26,14 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // Vite 配置文件需要 Node.js 环境
+    files: ['vite.config.js'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.es2020 },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
+  },
 ])
