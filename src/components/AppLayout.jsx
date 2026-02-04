@@ -4,7 +4,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import Layout from './Layout';
 import { useAuth } from '../contexts/AuthContext';
 
-const AppLayout = () => {
+const AppLayout = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
@@ -18,7 +18,7 @@ const AppLayout = () => {
   
   return (
     <Layout>
-      <Outlet />
+      {children || <Outlet />}
     </Layout>
   );
 };

@@ -1,58 +1,169 @@
 // src/pages/Home.jsx
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Spin, Empty } from 'antd';
-import { SearchOutlined, PlayCircleOutlined, DownloadOutlined, UserOutlined, DatabaseOutlined, LoadingOutlined } from '@ant-design/icons';
-import { request, getSongUrl } from '../services/api';
+import { PlayCircleOutlined, DownloadOutlined, UserOutlined, DatabaseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { request, getSongUrl, getAlbumImages, downloadSong } from '../services/api';
+import { generateMusicFilename } from '../utils/filename';
 import { usePlayer } from '../contexts/PlayerContext';
+import { useSearch } from '../contexts/SearchContext';
 
 const Home = () => {
   const [songs, setSongs] = useState([]);
-  const [keyword, setKeyword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLazyLoading, setIsLazyLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize] = useState(15);
   const [hasMore, setHasMore] = useState(true);
+  const [albumImages, setAlbumImages] = useState({}); // 存储专辑封面图片URL
   const observerRef = useRef();
+  const prevSearchKeywordRef = useRef();
   
   const { playSong } = usePlayer();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { searchKeyword, finishSearch } = useSearch();
+
+  // 获取专辑封面图片
+  const fetchAlbumImage = async (song) => {
+    try {
+      const res = await getAlbumImages(song.FileHash, song.AlbumID || '');
+      console.log('专辑图片API响应:', res);
+      
+      if (res.data && res.data.length > 0) {
+        // 根据实际返回格式解析专辑封面
+        let imageUrl = '';
+        
+        // 优先检查 album 数组中的 sizable_cover
+        if (res.data[0].album && res.data[0].album.length > 0) {
+          const album = res.data[0].album[0];
+          console.log('找到专辑信息:', album);
+          imageUrl = album.sizable_cover || '';
+          // 替换 {size} 为实际尺寸
+          if (imageUrl) {
+            imageUrl = imageUrl.replace('{size}', '200');
+            console.log('使用专辑封面:', imageUrl);
+          }
+        }
+        
+        // 如果 album 中没有找到，检查 author 中的图片
+        if (!imageUrl && res.data[0].author && res.data[0].author.length > 0) {
+          const author = res.data[0].author[0];
+          console.log('使用歌手信息:', author);
+          
+          // 优先使用 imgs['3'] 中的图片
+          if (author.imgs && author.imgs['3'] && author.imgs['3'].length > 0) {
+            imageUrl = author.imgs['3'][0]?.sizable_portrait || '';
+            if (imageUrl) {
+              imageUrl = imageUrl.replace('{size}', '200');
+              console.log('使用歌手图片[3]:', imageUrl);
+            }
+          } 
+          // 其次使用 imgs['4'] 中的图片
+          else if (author.imgs && author.imgs['4'] && author.imgs['4'].length > 0) {
+            imageUrl = author.imgs['4'][0]?.sizable_portrait || '';
+            if (imageUrl) {
+              imageUrl = imageUrl.replace('{size}', '200');
+              console.log('使用歌手图片[4]:', imageUrl);
+            }
+          }
+          // 最后使用 avatar
+          else if (author.sizable_avatar) {
+            imageUrl = author.sizable_avatar.replace('{size}', '200');
+            console.log('使用歌手头像:', imageUrl);
+          }
+        }
+        
+        if (imageUrl) {
+          console.log(`为歌曲 ${song.OriSongName} 设置封面:`, imageUrl);
+          setAlbumImages(prev => ({
+            ...prev,
+            [song.FileHash]: imageUrl
+          }));
+        } else {
+          console.log('未找到有效的封面图片');
+        }
+      } else {
+        console.log('API返回空数据');
+      }
+    } catch (error) {
+      console.error('获取专辑图片失败:', error);
+      // 即使获取失败也不影响主流程
+    }
+  };
 
   const searchSongs = useCallback(async (page = 1) => {
     // 如果没有关键词且不是分页操作，提示用户输入
-    if (!keyword.trim() && page === 1) {
-      alert('请输入搜索关键词');
+    if (!searchKeyword?.trim() && page === 1) {
+      // 不再弹出alert，让用户自己输入
       return;
     }
     
     // 如果没有关键词但有分页操作，使用之前的关键词
-    const searchKeyword = keyword.trim() || (songs.length > 0 ? keyword : '');
+    const keyword = searchKeyword?.trim() || '';
     
-    if (!searchKeyword) {
-      alert('请输入搜索关键词');
+    if (!keyword) {
       return;
     }
     
     try {
       setIsLoading(true);
-      const res = await request(`/search?type=song&keywords=${searchKeyword}&page=${page}&pagesize=${pageSize}`);
+      const res = await request(`/search?type=song&keywords=${keyword}&page=${page}&pagesize=${pageSize}`);
       const data = res.data;
       if (page === 1) {
         setSongs(data.lists || []);
+        // 为新搜索结果获取专辑封面
+        (data.lists || []).forEach(song => {
+          fetchAlbumImage(song);
+        });
       } else {
-        setSongs(prevSongs => [...prevSongs, ...(data.lists || [])]);
+        const newSongs = data.lists || [];
+        setSongs(prevSongs => [...prevSongs, ...newSongs]);
+        // 为新增的歌曲获取专辑封面
+        newSongs.forEach(song => {
+          fetchAlbumImage(song);
+        });
       }
       setTotal(data.total || 0);
       setCurrentPage(page);
       setHasMore((page * pageSize) < (data.total || 0));
+      
+      // 更新URL参数
+      if (page === 1) {
+        const searchParams = new URLSearchParams(location.search);
+        searchParams.set('q', keyword);
+        navigate(`/?${searchParams.toString()}`, { replace: true });
+      }
     } catch (error) {
       console.error('搜索失败:', error);
       alert('搜索失败，请稍后重试');
     } finally {
       setIsLoading(false);
       setIsLazyLoading(false);
+      finishSearch(); // 完成搜索后关闭加载状态
     }
-  }, [keyword, songs.length, pageSize]);
+  }, [searchKeyword, pageSize, request, getAlbumImages, navigate, location.search]);
+
+  // 页面加载时检查URL参数
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const query = searchParams.get('q');
+    if (query) {
+      prevSearchKeywordRef.current = query;
+      searchSongs(1);
+    }
+  }, [location.search]);
+
+  // 当搜索关键词改变时自动搜索
+  useEffect(() => {
+    // 避免重复搜索相同的关键词
+    if (searchKeyword && searchKeyword !== prevSearchKeywordRef.current) {
+      console.log('触发搜索，关键词:', searchKeyword);
+      prevSearchKeywordRef.current = searchKeyword;
+      searchSongs(1);
+    }
+  }, [searchKeyword, searchSongs]);
 
   const loadMoreSongs = useCallback(() => {
     if (!hasMore || isLoading || isLazyLoading) return;
@@ -90,50 +201,44 @@ const Home = () => {
     }
   };
 
-  const handleDownload = (song) => {
-    getSongUrl(song.FileHash).then(res => {
-      const link = document.createElement('a');
-      link.href = res.backupUrl[0];
-      link.download = `${song.FileName}.${res.extName}`;
-      link.click();
-    }).catch(error => {
+  const handleDownload = async (song) => {
+    try {
+      // 显示下载中提示
+      const downloadBtn = event.target.closest('.action-button');
+      const originalText = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = '<span class="spinner"></span> 下载中...';
+      downloadBtn.disabled = true;
+      
+      // 生成规范的文件名
+      const filename = generateMusicFilename(song);
+      
+      // 使用axios下载
+      const result = await downloadSong(song.FileHash, filename);
+      
+      if (result.success) {
+        console.log(`下载成功: ${result.filename}`);
+      }
+      
+      // 恢复按钮状态
+      downloadBtn.innerHTML = originalText;
+      downloadBtn.disabled = false;
+      
+    } catch (error) {
       console.error('下载失败:', error);
-      alert('下载失败，请稍后重试');
-    });
+      alert(`下载失败: ${error.message}`);
+      
+      // 恢复按钮状态
+      const downloadBtn = event.target.closest('.action-button');
+      if (downloadBtn) {
+        const originalText = downloadBtn.innerHTML.replace('<span class="spinner"></span> 下载中...', '📥 下载');
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      }
+    }
   };
 
   return (
     <div className="home-container">
-      {/* 搜索区域 */}
-      <div className="search-section glass-card">
-        <h2 className="section-title">🎵 音乐搜索</h2>
-        <div className="search-box">
-          <div className="input-wrapper">
-            <span className="input-icon">🔍</span>
-            <input 
-              placeholder="输入歌曲名、歌手或专辑..." 
-              value={keyword} 
-              onChange={e => setKeyword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && searchSongs(1)} 
-              className="glass-input"
-              disabled={isLoading}
-            />
-          </div>
-          <button 
-            onClick={() => searchSongs(1)}
-            disabled={isLoading}
-            className="search-button glass-button primary"
-          >
-            {isLoading ? (
-              <>
-                <span className="spinner"></span>
-                搜索中...
-              </>
-            ) : '搜索音乐'}
-          </button>
-        </div>
-      </div>
-
       {/* 结果区域 */}
       <div className="results-section">
         <div className="results-header">
@@ -156,6 +261,24 @@ const Home = () => {
                     className="song-item glass-card"
                     ref={index === songs.length - 1 ? lastSongElementRef : null}
                   >
+                    {/* 专辑封面 */}
+                    <div className="song-cover">
+                      {albumImages[song.FileHash] ? (
+                        <img 
+                          src={albumImages[song.FileHash]} 
+                          alt={song.AlbumName || '专辑封面'}
+                          className="album-cover-img"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className="album-cover-placeholder">
+                        🎵
+                      </div>
+                    </div>
+                    
                     <div className="song-info">
                       <div className="song-title">
                         <PlayCircleOutlined className="title-icon" />
@@ -192,7 +315,7 @@ const Home = () => {
                 <div className="no-results glass-card">
                   <Empty 
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={keyword ? '未找到相关歌曲' : '请输入关键词开始搜索'}
+                    description={searchKeyword ? '未找到相关歌曲' : '请输入关键词开始搜索'}
                   >
                     <p style={{color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem'}}>支持搜索歌曲名、歌手名、专辑名</p>
                   </Empty>
@@ -216,11 +339,7 @@ const Home = () => {
             </div>
           )}
         </div>
-        
-
       </div>
-
-
     </div>
   );
 };

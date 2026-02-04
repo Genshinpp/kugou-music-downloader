@@ -78,18 +78,19 @@ const BottomPlayer = () => {
         <div className="player-content">
           {/* 歌曲信息 */}
           <div className="song-info">
-            <div className="song-thumbnail">
+            <div className="song-cover">
               {currentSong.thumbnail ? (
                 <img 
                   src={currentSong.thumbnail} 
                   alt={currentSong.title}
+                  className="album-cover-img"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
                 />
               ) : null}
-              <div className="song-placeholder">
+              <div className="album-cover-placeholder">
                 🎵
               </div>
             </div>

@@ -1,15 +1,26 @@
 // src/components/Layout.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useSearch } from '../contexts/SearchContext';
+import { SearchOutlined } from '@ant-design/icons';
 import BottomPlayer from './BottomPlayer';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { searchKeyword, isSearching, handleSearch: contextHandleSearch } = useSearch();
+  const [localKeyword, setLocalKeyword] = useState('');
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (localKeyword.trim()) {
+      contextHandleSearch(localKeyword.trim());
+    }
   };
 
   return (
@@ -27,8 +38,34 @@ const Layout = ({ children }) => {
       {/* 主要内容区域 */}
       <div className="app-container glass-effect">
         <header className="app-header">
-          <div className="logo">
-            <Link to="/">🎵 音乐下载器</Link>
+          <div className="header-left">
+            <div className="logo">
+              <Link to="/">🎵 音乐下载器</Link>
+            </div>
+            {location.pathname === '/' && (
+              <form onSubmit={handleSearch} className="header-search-form">
+                <div className="search-wrapper">
+                  <span className="search-icon">
+                    <SearchOutlined />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="搜索歌曲、歌手、专辑..."
+                    value={localKeyword}
+                    onChange={(e) => setLocalKeyword(e.target.value)}
+                    className="header-search-input glass-input"
+                    disabled={isSearching}
+                  />
+                  <button 
+                    type="submit" 
+                    className="header-search-button glass-button primary"
+                    disabled={isSearching}
+                  >
+                    {isSearching ? '搜索中...' : '搜索'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
           <nav className="nav">
             <Link 

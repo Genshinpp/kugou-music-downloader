@@ -1,5 +1,49 @@
 // src/services/api.js
+import axios from 'axios';
 
+// 创建axios实例
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 30000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+// 请求拦截器
+apiClient.interceptors.request.use(
+  (config) => {
+    // 添加认证信息
+    const auth = localStorage.getItem('auth');
+    if (auth) {
+      const cookie = Object.entries(JSON.parse(auth))
+        .map(([k, v]) => `${k}=${v}`)
+        .join('; ');
+      config.headers.Cookie = cookie;
+    }
+    console.log('请求:', config.baseURL + config.url);
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// 响应拦截器
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('响应:', response);
+    return response.data;
+  },
+  (error) => {
+    console.error('请求错误:', error);
+    if (error.response?.status === 502) {
+      throw new Error(error.response.data?.error_msg || '服务器错误');
+    }
+    throw error;
+  }
+);
 
 export const request = async (endpoint, options = {}) => {
     // 构造完整 URL
@@ -42,3 +86,77 @@ export const request = async (endpoint, options = {}) => {
 
 
 export const getSongUrl = (hash) => request(`/song/url?hash=${hash}&quality=320`);
+
+// 基于axios的文件下载功能
+export const downloadSong = async (hash, filename) => {
+  try {
+    // 获取歌曲URL
+    const songData = await getSongUrl(hash);
+    
+    if (!songData?.backupUrl?.[0]) {
+      throw new Error('无法获取歌曲下载地址');
+    }
+    
+    const downloadUrl = songData.backupUrl[0];
+    const extension = songData.extName || 'mp3';
+    
+    // 使用axios下载文件
+    const response = await axios({
+      method: 'GET',
+      url: downloadUrl,
+      responseType: 'blob',
+      timeout: 60000, // 60秒超时
+      onDownloadProgress: (progressEvent) => {
+        // 可以在这里添加下载进度回调
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        console.log(`下载进度: ${percentCompleted}%`);
+      }
+    });
+    
+    // 创建文件对象
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'] || 'audio/mpeg'
+    });
+    
+    // 生成最终文件名
+    const finalFilename = filename || `歌曲_${Date.now()}.${extension}`;
+    
+    // 触发下载
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = finalFilename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    // 清理资源
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+    
+    console.log(`下载完成: ${finalFilename}`);
+    return { success: true, filename: finalFilename };
+    
+  } catch (error) {
+    console.error('下载失败:', error);
+    throw new Error(`下载失败: ${error.message}`);
+  }
+};
+
+// 获取专辑封面图片
+export const getAlbumImages = (hash, albumId = '') => {
+  const params = new URLSearchParams();
+  params.append('hash', hash);
+  if (albumId) {
+    params.append('album_id', albumId);
+  }
+  // 根据实际API调整参数
+  params.append('count', '5'); // 获取多张图片以确保能找到合适的封面
+  
+  return request(`/images?${params.toString()}`);
+};

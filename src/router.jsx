@@ -2,9 +2,9 @@
 import React from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import Login from './components/Login';
-import Home from './pages/Home';
 import RootLayout from './components/RootLayout';
-import AppLayout from './components/AppLayout';
+import MainApp from './components/MainApp';
+import HomeWithSearch from './components/HomeWrapper';
 
 // 路由配置
 export const router = createBrowserRouter([
@@ -13,11 +13,11 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
-        element: <AppLayout />,
+        element: <MainApp />,
         children: [
           {
             index: true,
-            element: <Home />,
+            element: <HomeWithSearch />, // 使用包装组件
           },
         ],
       },

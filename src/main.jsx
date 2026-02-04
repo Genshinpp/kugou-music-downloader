@@ -6,13 +6,16 @@ import './index.css'
 import { router } from './router'
 import { AuthProvider } from './contexts/AuthContext'
 import { PlayerProvider } from './contexts/PlayerContext'
+import { SearchProvider } from './contexts/SearchContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <PlayerProvider>
-        <RouterProvider router={router} />
-      </PlayerProvider>
+      <SearchProvider>
+        <PlayerProvider>
+          <RouterProvider router={router} />
+        </PlayerProvider>
+      </SearchProvider>
     </AuthProvider>
   </StrictMode>,
 )

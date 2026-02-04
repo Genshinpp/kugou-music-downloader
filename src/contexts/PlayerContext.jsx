@@ -1,5 +1,6 @@
 // src/contexts/PlayerContext.jsx
 import React, { createContext, useContext, useReducer, useRef, useEffect } from 'react';
+import { getAlbumImages } from '../services/api';
 
 // 初始化音频上下文（备用）
 // let audioContext = null;
@@ -165,8 +166,62 @@ export const PlayerProvider = ({ children }) => {
   const [state, dispatch] = useReducer(playerReducer, initialState);
   const audioRef = useRef(null);
 
+  // 获取专辑封面
+  const fetchAlbumCover = async (song) => {
+    try {
+      const res = await getAlbumImages(song.FileHash, song.AlbumID || '');
+      console.log('底部播放栏专辑图片API响应:', res);
+      
+      if (res.data && res.data.length > 0) {
+        let imageUrl = '';
+        
+        // 优先检查 album 数组中的 sizable_cover
+        if (res.data[0].album && res.data[0].album.length > 0) {
+          const album = res.data[0].album[0];
+          imageUrl = album.sizable_cover || '';
+          if (imageUrl) {
+            imageUrl = imageUrl.replace('{size}', '200');
+          }
+        }
+        
+        // 如果 album 中没有找到，检查 author 中的图片
+        if (!imageUrl && res.data[0].author && res.data[0].author.length > 0) {
+          const author = res.data[0].author[0];
+          
+          // 优先使用 imgs['3'] 中的图片
+          if (author.imgs && author.imgs['3'] && author.imgs['3'].length > 0) {
+            imageUrl = author.imgs['3'][0]?.sizable_portrait || '';
+            if (imageUrl) {
+              imageUrl = imageUrl.replace('{size}', '200');
+            }
+          } 
+          // 其次使用 imgs['4'] 中的图片
+          else if (author.imgs && author.imgs['4'] && author.imgs['4'].length > 0) {
+            imageUrl = author.imgs['4'][0]?.sizable_portrait || '';
+            if (imageUrl) {
+              imageUrl = imageUrl.replace('{size}', '200');
+            }
+          }
+          // 最后使用 avatar
+          else if (author.sizable_avatar) {
+            imageUrl = author.sizable_avatar.replace('{size}', '200');
+          }
+        }
+        
+        if (imageUrl) {
+          console.log(`为播放歌曲 ${song.OriSongName} 设置封面:`, imageUrl);
+          return imageUrl;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('获取播放歌曲专辑图片失败:', error);
+      return null;
+    }
+  };
+
   // 播放器操作函数
-  const playSong = (song, playlist = [], index = 0) => {
+  const playSong = async (song, playlist = [], index = 0) => {
     dispatch({ type: ACTIONS.SET_LOADING, payload: true });
     
     if (playlist.length > 0) {
@@ -174,7 +229,16 @@ export const PlayerProvider = ({ children }) => {
       dispatch({ type: ACTIONS.SET_CURRENT_INDEX, payload: index });
     }
     
-    dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: song });
+    // 获取专辑封面
+    const albumCover = await fetchAlbumCover(song);
+    
+    // 将专辑封面添加到歌曲对象中
+    const songWithCover = {
+      ...song,
+      thumbnail: albumCover || song.thumbnail
+    };
+    
+    dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: songWithCover });
     
     // 设置音频源
     if (audioRef.current) {
@@ -317,7 +381,9 @@ export const PlayerProvider = ({ children }) => {
       } else {
         dispatch({ type: ACTIONS.PAUSE });
         // 播放完毕后清除当前歌曲，隐藏播放器
-        dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: null });
+        setTimeout(() => {
+          dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: null });
+        }, 1000); // 延迟1秒后关闭播放栏，让用户看到播放完成的状态
       }
     };
 
