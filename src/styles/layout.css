@@ -534,6 +534,10 @@ glass-card:hover {
   padding: 1.1rem 2rem;
   min-width: 120px;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .results-section {
@@ -541,6 +545,29 @@ glass-card:hover {
   animation: fadeInUp 0.8s ease forwards;
   animation-delay: 0.2s;
   opacity: 0;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.results-info {
+  display: flex;
+  gap: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.results-info span {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
 }
 
 @keyframes fadeInUp {
@@ -554,18 +581,45 @@ glass-card:hover {
   }
 }
 
+.song-list-container {
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 2rem;
+}
+
 .song-list {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  margin-bottom: 2rem;
+  gap: 0.3rem;
+}
+
+/* 滚动条样式 */
+.song-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.song-list-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.song-list-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.song-list-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .song-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding: 0.8rem 1rem;
   transition: all 0.3s ease;
 }
 
@@ -579,22 +633,40 @@ glass-card:hover {
 }
 
 .song-title {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: white;
   margin-bottom: 0.5rem;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-icon {
+  color: #1890ff;
+  font-size: 1.2rem;
+}
+
+.song-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.song-artist, .song-album {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
 }
 
 .song-artist {
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 0.3rem;
-  font-size: 0.95rem;
 }
 
 .song-album {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.85rem;
 }
 
 .song-actions {
@@ -660,6 +732,106 @@ glass-card:hover {
 .empty-state small {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.9rem;
+}
+
+/* 分页样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding: 1.5rem;
+}
+
+.custom-pagination {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Ant Design 组件自定义样式 */
+.ant-pagination {
+  display: flex;
+  justify-content: center;
+}
+
+.ant-pagination-item {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px);
+}
+
+.ant-pagination-item a {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.ant-pagination-item-active {
+  background: rgba(24, 144, 255, 0.3) !important;
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+.ant-pagination-item-active a {
+  color: white !important;
+}
+
+.ant-pagination-prev, 
+.ant-pagination-next {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px);
+}
+
+.ant-pagination-jump-prev, 
+.ant-pagination-jump-next {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.ant-pagination-options {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.ant-select-selector {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+.ant-select-arrow {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.ant-spin {
+  color: white !important;
+}
+
+.ant-spin-dot-item {
+  background-color: #1890ff !important;
+}
+
+.ant-empty-description {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.lazy-loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+}
+
+.no-more-data {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 1rem;
 }
 
 .no-results {
@@ -809,5 +981,32 @@ glass-card:hover {
   
   .glass-card {
     padding: 1.5rem;
+  }
+  
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .results-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .song-meta {
+    align-items: flex-start;
+  }
+  
+  .pagination-container {
+    padding: 1rem;
+  }
+  
+  .custom-pagination {
+    padding: 0.8rem 1rem;
+  }
+  
+  .ant-pagination {
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 }
