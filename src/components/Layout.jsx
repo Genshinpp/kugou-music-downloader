@@ -9,7 +9,7 @@ import BottomPlayer from './BottomPlayer';
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const { searchKeyword, isSearching, handleSearch: contextHandleSearch } = useSearch();
+  const { isSearching, handleSearch: contextHandleSearch } = useSearch();
   const [localKeyword, setLocalKeyword] = useState('');
 
   const handleLogout = () => {
@@ -76,9 +76,20 @@ const Layout = ({ children }) => {
             </Link>
             {user && (
               <>
-                <span className="user-info">
-                  👤 {user.nickname || user.username || '用户'}
-                </span>
+                <div className="user-profile">
+                  <div className="user-avatar">
+                    <img 
+                      src={user.profile?.avatarUrl || user.profile?.pic || '/default-avatar.png'} 
+                      alt="用户头像" 
+                      onError={(e) => {
+                        e.target.src = '/default-avatar.png';
+                      }}
+                    />
+                  </div>
+                  <span className="user-nickname">
+                    {user.profile?.nickname || user.profile?.k_nickname || user.account?.userName || '用户'}
+                  </span>
+                </div>
                 <button onClick={handleLogout} className="logout-btn glass-button">
                   退出登录
                 </button>
