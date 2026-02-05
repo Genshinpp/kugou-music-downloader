@@ -158,8 +158,9 @@ const playerReducer = (state, action) => {
   }
 };
 
-// 创建 Context
-const PlayerContext = createContext();
+// 创建分离的Context
+const PlayerStateContext = createContext();
+const PlayerActionsContext = createContext();
 
 // Provider 组件
 export const PlayerProvider = ({ children }) => {
@@ -419,13 +420,25 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [state.playbackRate]);
 
-  // Context 值
-  const value = {
-    // 状态
-    ...state,
+  // 分离状态和操作方法的Context值
+  const stateValue = {
+    // 仅包含状态值
+    currentSong: state.currentSong,
+    isPlaying: state.isPlaying,
+    currentTime: state.currentTime,
+    duration: state.duration,
+    volume: state.volume,
+    playbackRate: state.playbackRate,
+    playlist: state.playlist,
+    currentIndex: state.currentIndex,
+    isLoading: state.isLoading,
+    error: state.error,
     // 引用
-    audioRef,
-    // 操作函数
+    audioRef
+  };
+
+  const actionsValue = {
+    // 仅包含操作函数
     playSong,
     togglePlay,
     play,
@@ -441,21 +454,38 @@ export const PlayerProvider = ({ children }) => {
   };
 
   return (
-    <PlayerContext.Provider value={value}>
-      {children}
-      {/* 隐藏的音频元素 */}
-      <audio ref={audioRef} preload="metadata" />
-    </PlayerContext.Provider>
+    <PlayerStateContext.Provider value={stateValue}>
+      <PlayerActionsContext.Provider value={actionsValue}>
+        {children}
+        {/* 隐藏的音频元素 */}
+        <audio ref={audioRef} preload="metadata" />
+      </PlayerActionsContext.Provider>
+    </PlayerStateContext.Provider>
   );
 };
 
-// 自定义 Hook
-export const usePlayer = () => {
-  const context = useContext(PlayerContext);
+// 自定义 Hooks
+export const usePlayerState = () => {
+  const context = useContext(PlayerStateContext);
   if (!context) {
-    throw new Error('usePlayer 必须在 PlayerProvider 内部使用');
+    throw new Error('usePlayerState 必须在 PlayerProvider 内部使用');
   }
   return context;
 };
 
-export default PlayerContext;
+export const usePlayerActions = () => {
+  const context = useContext(PlayerActionsContext);
+  if (!context) {
+    throw new Error('usePlayerActions 必须在 PlayerProvider 内部使用');
+  }
+  return context;
+};
+
+// 兼容旧的usePlayer Hook
+export const usePlayer = () => {
+  const state = usePlayerState();
+  const actions = usePlayerActions();
+  return { ...state, ...actions };
+};
+
+export default PlayerStateContext;

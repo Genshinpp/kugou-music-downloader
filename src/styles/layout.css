@@ -27,8 +27,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
 }
@@ -79,8 +78,6 @@
   border-radius: 12px;
   color: white;
   font-size: 0.95rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
@@ -116,8 +113,6 @@
 
 .app-footer {
   background: rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   color: rgba(255, 255, 255, 0.8);
   text-align: center;
   padding: 1.5rem;
@@ -195,8 +190,6 @@
   padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 20px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
 }
@@ -400,8 +393,7 @@
   max-width: 420px;
   padding: 2.5rem;
   border-radius: 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25),
               inset 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -487,8 +479,6 @@
   border-radius: 12px;
   color: white;
   font-size: 1rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
@@ -523,8 +513,6 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,10 +586,8 @@
 
 /* 统一的玻璃卡片样式 */
 .glass-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 1.5rem;
@@ -696,7 +682,6 @@ glass-card:hover {
   background: rgba(255, 255, 255, 0.1);
   padding: 0.3rem 0.8rem;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
 }
 
 @keyframes fadeInUp {
@@ -713,8 +698,7 @@ glass-card:hover {
 .song-list-container {
   padding: 1rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 2rem;
 }
@@ -955,7 +939,6 @@ glass-card:hover {
 
 .custom-pagination {
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
   padding: 1rem 1.5rem;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -970,7 +953,6 @@ glass-card:hover {
 .ant-pagination-item {
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px);
 }
 
 .ant-pagination-item a {
@@ -991,7 +973,6 @@ glass-card:hover {
   color: rgba(255, 255, 255, 0.9) !important;
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px);
 }
 
 .ant-pagination-jump-prev, 
@@ -1007,7 +988,6 @@ glass-card:hover {
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   color: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(10px);
 }
 
 .ant-select-arrow {
@@ -1311,8 +1291,6 @@ glass-card:hover {
 
 .player-container {
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 1rem 1.5rem;
   box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.3);
@@ -1416,7 +1394,6 @@ glass-card:hover {
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 }
 
 .control-btn:hover:not(:disabled) {
