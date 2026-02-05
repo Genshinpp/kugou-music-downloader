@@ -13,6 +13,7 @@ const Layout = ({ children }) => {
   const [localKeyword, setLocalKeyword] = useState('');
 
   const handleLogout = () => {
+    window.location.href = '/';
     logout();
   };
 

@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
         request(`/login/token?token=${token?.token}&userid=${token?.userid}`)
           .then(() => {
             console.log("Token is valid");
-            getUserDetail()
+            getUserDetail();
           })
           .catch(() => {
             console.log("Token is invalid");
@@ -56,9 +56,9 @@ export const AuthProvider = ({ children }) => {
       }
       setLoading(false);
     };
-    
+
     checkAuth();
-  },[]);
+  }, []);
 
   const login = async (token) => {
     // 存储基本认证信息
