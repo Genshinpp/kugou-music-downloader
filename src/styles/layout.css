@@ -1,11 +1,29 @@
 /* src/styles/layout.css */
+/* CSS变量定义 - 提高可维护性和性能 */
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-gradient-rgba: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-bg-hover: rgba(255, 255, 255, 0.15);
+  --text-primary: white;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-tertiary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.15);
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+}
+
 /* 全局应用背景 */
 .app-layout {
   min-height: 100vh;
   width: 100%;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
 }
 
 .app-background {
@@ -14,12 +32,16 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, 
-    rgba(102, 126, 234, 0.8) 0%, 
-    rgba(118, 75, 162, 0.8) 100%),
-    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="1.5" fill="rgba(255,255,255,0.08)"/></svg>');
-  background-size: cover, 15px 15px;
-  animation: gradientShift 20s ease infinite;
+  background: var(--primary-gradient-rgba);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-background {
+    background: var(--primary-gradient-rgba),
+      url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="1.5" fill="rgba(255,255,255,0.08)"/></svg>');
+    background-size: cover, 15px 15px;
+    animation: gradientShift 20s ease infinite;
+  }
 }
 
 .app-container {
@@ -33,14 +55,12 @@
 }
 
 .app-header {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: var(--glass-bg-hover);
   padding: 1.5rem 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .header-left {
@@ -73,24 +93,24 @@
 .header-search-input {
   flex: 1;
   padding: 0.8rem 1rem 0.8rem 2.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
-  transition: all 0.3s ease;
+  transition: border-color var(--transition-base), background-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .header-search-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--text-tertiary);
+  background: var(--glass-bg-hover);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+              inset 0 0 0 1px var(--text-tertiary);
 }
 
 .header-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 .header-search-input:disabled {
@@ -173,13 +193,13 @@
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  transition: all 0.3s ease;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 .nav a:hover,
 .nav a.active {
   background: rgba(255,255,255,0.2);
-  color: white;
+  color: var(--text-primary);
 }
 
 /* 用户信息显示样式 */
@@ -188,16 +208,16 @@
   align-items: center;
   gap: 0.8rem;
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg-hover);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  border: 1px solid var(--glass-border);
+  transition: transform var(--transition-base), background-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .user-profile:hover {
   background: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .user-avatar {
@@ -250,17 +270,17 @@
 }
 
 .logout-btn {
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color var(--transition-base);
 }
 
 .logout-btn:hover {
-  background: rgba(255,255,255,0.3);
+  background: var(--glass-bg-hover);
 }
 
 .main-content {
@@ -329,9 +349,19 @@
 .floating-element {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: var(--glass-bg);
   animation: float 15s infinite ease-in-out;
+}
+
+/* 为低性能设备禁用动画 */
+@media (prefers-reduced-motion: reduce) {
+  .floating-element {
+    animation: none;
+  }
+  
+  .app-background {
+    animation: none;
+  }
 }
 
 .element-1 {
@@ -474,24 +504,24 @@
 .glass-input {
   width: 100%;
   padding: 1rem 1rem 1rem 3rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: border-color var(--transition-base), background-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .glass-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--text-tertiary);
+  background: var(--glass-bg-hover);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+              inset 0 0 0 1px var(--text-tertiary);
 }
 
 .glass-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 .glass-input:disabled {
@@ -512,7 +542,7 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -521,7 +551,7 @@
 
 .glass-button:not(:disabled):hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .glass-button:disabled {
@@ -550,18 +580,19 @@
   padding: 1.2rem;
 }
 
-.spinner {
+/* 合并重复的spinner样式 */
+.spinner,
+.loading-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+  border: 2px solid var(--text-tertiary);
+  border-top: 2px solid var(--text-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
 .login-footer {
@@ -587,19 +618,19 @@
 /* 统一的玻璃卡片样式 */
 .glass-card {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md),
+              inset 0 0 0 1px var(--glass-bg);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
-glass-card:hover {
+.glass-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-lg),
+              inset 0 0 0 1px var(--glass-border);
 }
 
 .section-title {
@@ -733,22 +764,11 @@ glass-card:hover {
   justify-content: space-between;
   align-items: center;
   padding: 0.8rem 1rem;
-  transition: all 0.3s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-/* 专辑封面样式 */
-.song-cover {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-right: 1rem;
-  flex-shrink: 0;
-  position: relative;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
+/* 专辑封面样式 - 合并重复样式 */
+.song-cover,
 .song-thumbnail {
   width: 60px;
   height: 60px;
@@ -757,8 +777,8 @@ glass-card:hover {
   margin-right: 1rem;
   flex-shrink: 0;
   position: relative;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
 }
 
 .album-cover-img {
@@ -768,19 +788,7 @@ glass-card:hover {
   display: block;
 }
 
-.song-thumbnail-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.5);
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0.05) 100%);
-}
-
+.song-thumbnail-placeholder,
 .album-cover-placeholder {
   width: 100%;
   height: 100%;
@@ -788,10 +796,8 @@ glass-card:hover {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.5);
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0.05) 100%);
+  color: var(--text-muted);
+  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(255, 255, 255, 0.05) 100%);
 }
 
 .song-item:hover {
@@ -889,27 +895,16 @@ glass-card:hover {
   border-color: rgba(128, 128, 128, 0.4);
 }
 
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s ease-in-out infinite;
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+/* 合并重复的no-results样式 */
 .no-results {
   text-align: center;
   padding: 3rem 2rem;
+  color: var(--text-secondary);
 }
 
 .empty-state {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .empty-icon {
@@ -1025,12 +1020,6 @@ glass-card:hover {
   margin-top: 1rem;
 }
 
-.no-results {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-  font-size: 1.1rem;
-}
 
 .audio-player {
   position: fixed;
@@ -1285,7 +1274,8 @@ glass-card:hover {
   height: 100%;
   background: linear-gradient(90deg, #1890ff, #722ed1);
   border-radius: 0 2px 2px 0;
-  transition: width 0.1s linear;
+  transform-origin: left;
+  transition: transform 0.1s linear;
   box-shadow: 0 0 10px rgba(24, 144, 255, 0.5);
 }
 
@@ -1312,16 +1302,8 @@ glass-card:hover {
   min-width: 0;
 }
 
-.song-thumbnail {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-right: 1rem;
-  flex-shrink: 0;
-  position: relative;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* 底部播放器的song-thumbnail继承通用样式，只需添加额外属性 */
+.bottom-player .song-thumbnail {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1334,18 +1316,6 @@ glass-card:hover {
   display: block;
 }
 
-.song-thumbnail-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.5);
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0.05) 100%);
-}
 
 .song-placeholder {
   font-size: 1.5rem;
@@ -1388,12 +1358,12 @@ glass-card:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--glass-bg-hover);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
   font-size: 1.2rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform var(--transition-base), background-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .control-btn:hover:not(:disabled) {
@@ -1415,13 +1385,13 @@ glass-card:hover {
   border: none;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(24, 144, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  color: white;
+  color: var(--text-primary);
 }
 
 .play-btn::before {
@@ -1433,7 +1403,7 @@ glass-card:hover {
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-base);
 }
 
 .play-btn:hover::before {
@@ -1457,11 +1427,6 @@ glass-card:hover {
 .play-icon {
   font-size: 1.6rem;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
-.play-btn:hover:not(:disabled) {
-  transform: scale(1.15);
-  box-shadow: 0 0 20px rgba(24, 144, 255, 0.6);
 }
 
 .player-extras {
@@ -1492,12 +1457,12 @@ glass-card:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--glass-bg-hover);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform var(--transition-base), background-color var(--transition-base);
 }
 
 .volume-btn:hover {
@@ -1532,7 +1497,7 @@ glass-card:hover {
   background: #1890ff;
   cursor: pointer;
   box-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
-  transition: all 0.2s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .volume-slider::-moz-range-thumb {
@@ -1548,15 +1513,6 @@ glass-card:hover {
 .volume-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
   box-shadow: 0 0 8px rgba(24, 144, 255, 0.8);
-}
-
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
 }
 
 .play-icon {

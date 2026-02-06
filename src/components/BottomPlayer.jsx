@@ -1,9 +1,17 @@
 // src/components/BottomPlayer.jsx
-import React from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 
 import { usePlayer } from '../contexts/PlayerContext';
 
-const BottomPlayer = () => {
+// 格式化时间显示 - 提取到组件外部避免每次渲染都创建
+const formatTime = (seconds) => {
+  if (isNaN(seconds) || seconds === Infinity) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const BottomPlayer = memo(() => {
   const {
     currentSong,
     isPlaying,
@@ -21,19 +29,17 @@ const BottomPlayer = () => {
     // prevSong
   } = usePlayer();
 
-  // 计算进度百分比
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  // 使用 useMemo 缓存计算结果
+  const progressPercent = useMemo(() => {
+    return duration > 0 ? (currentTime / duration) * 100 : 0;
+  }, [currentTime, duration]);
 
-  // 格式化时间显示
-  const formatTime = (seconds) => {
-    if (isNaN(seconds) || seconds === Infinity) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // 使用 useMemo 缓存格式化后的时间
+  const formattedCurrentTime = useMemo(() => formatTime(currentTime), [currentTime]);
+  const formattedDuration = useMemo(() => formatTime(duration), [duration]);
 
-  // 处理进度条点击
-  const handleProgressClick = (e) => {
+  // 使用 useCallback 缓存事件处理函数
+  const handleProgressClick = useCallback((e) => {
     if (!currentSong || duration <= 0) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
@@ -42,22 +48,22 @@ const BottomPlayer = () => {
     const newTime = percentage * duration;
     
     seekTo(newTime);
-  };
+  }, [currentSong, duration, seekTo]);
 
   // 处理音量滑块变化
-  const handleVolumeChange = (e) => {
+  const handleVolumeChange = useCallback((e) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
-  };
+  }, [setVolume]);
 
   // 处理音量图标点击
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (volume > 0) {
       setVolume(0);
     } else {
       setVolume(0.7);
     }
-  };
+  }, [volume, setVolume]);
 
   // 如果没有当前歌曲，则不显示播放器
   if (!currentSong) {
@@ -70,7 +76,7 @@ const BottomPlayer = () => {
       <div className="player-progress-bar" onClick={handleProgressClick}>
         <div 
           className="progress-fill" 
-          style={{ width: `${progressPercent}%` }}
+          style={{ transform: `scaleX(${progressPercent / 100})` }}
         ></div>
       </div>
 
@@ -128,9 +134,9 @@ const BottomPlayer = () => {
           {/* 时间显示和音量控制 */}
           <div className="player-extras">
             <div className="time-display">
-              <span>{formatTime(currentTime)}</span>
+              <span>{formattedCurrentTime}</span>
               <span>/</span>
-              <span>{formatTime(duration)}</span>
+              <span>{formattedDuration}</span>
             </div>
             
             <div className="volume-control">
@@ -166,6 +172,8 @@ const BottomPlayer = () => {
       </div>
     </div>
   );
-};
+});
+
+BottomPlayer.displayName = 'BottomPlayer';
 
 export default BottomPlayer;

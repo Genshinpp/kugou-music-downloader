@@ -1,5 +1,5 @@
 // src/pages/Home.jsx
-import React, { useState, useRef, useCallback, useEffect, memo } from "react";
+import React, { useState, useRef, useCallback, useEffect, memo, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Spin, Empty, message    } from "antd";
 import {
@@ -19,10 +19,77 @@ import { generateMusicFilename } from "../utils/filename";
 import { usePlayerActions } from "../contexts/PlayerContext";
 import { useSearch } from "../contexts/SearchContext";
 
+// 单个歌曲项组件，使用memo优化
+const SongItem = memo(({ song, albumImage, onPlay, onDownload, isLast, lastRef }) => {
+  const handlePlay = useCallback(() => {
+    onPlay(song);
+  }, [song, onPlay]);
+
+  const handleDownload = useCallback((e) => {
+    onDownload(song, e);
+  }, [song, onDownload]);
+
+  return (
+    <div
+      className="song-item glass-card"
+      ref={isLast ? lastRef : null}
+    >
+      {/* 专辑封面 */}
+      <div className="song-cover">
+        {albumImage ? (
+          <img
+            src={albumImage}
+            alt={song.AlbumName || "专辑封面"}
+            className="album-cover-img"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+        ) : null}
+        <div className="album-cover-placeholder">🎵</div>
+      </div>
+
+      <div className="song-info">
+        <div className="song-title">
+          <PlayCircleOutlined className="title-icon" />
+          {song.OriSongName}
+        </div>
+        <div className="song-meta">
+          <span className="song-artist">
+            <UserOutlined /> {song.SingerName}
+          </span>
+          <span className="song-album">
+            <DatabaseOutlined /> {song.AlbumName || "未知专辑"}
+          </span>
+        </div>
+      </div>
+      <div className="song-actions">
+        <button
+          className="action-button glass-button play-btn"
+          onClick={handlePlay}
+        >
+          <PlayCircleOutlined />
+          播放
+        </button>
+        <button
+          className="action-button glass-button download-btn"
+          onClick={handleDownload}
+        >
+          <DownloadOutlined />
+          下载
+        </button>
+      </div>
+    </div>
+  );
+});
+
+SongItem.displayName = 'SongItem';
+
 // 独立的歌曲列表组件，使用memo优化渲染
 const SongList = memo(({ songs, albumImages, onPlay, onDownload, lastRef }) => {
-  console.log("SongList 渲染了"); // 调试用，优化后应该很少打印
-  
   if (songs.length === 0) {
     return (
       <div className="no-results glass-card">
@@ -46,60 +113,29 @@ const SongList = memo(({ songs, albumImages, onPlay, onDownload, lastRef }) => {
   return (
     <div className="song-list">
       {songs.map((song, index) => (
-        <div
+        <SongItem
           key={`${song.FileHash}-${index}`}
-          className="song-item glass-card"
-          ref={index === songs.length - 1 ? lastRef : null}
-        >
-          {/* 专辑封面 */}
-          <div className="song-cover">
-            {albumImages[song.FileHash] ? (
-              <img
-                src={albumImages[song.FileHash]}
-                alt={song.AlbumName || "专辑封面"}
-                className="album-cover-img"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  e.target.nextSibling.style.display = "flex";
-                }}
-              />
-            ) : null}
-            <div className="album-cover-placeholder">🎵</div>
-          </div>
-
-          <div className="song-info">
-            <div className="song-title">
-              <PlayCircleOutlined className="title-icon" />
-              {song.OriSongName}
-            </div>
-            <div className="song-meta">
-              <span className="song-artist">
-                <UserOutlined /> {song.SingerName}
-              </span>
-              <span className="song-album">
-                <DatabaseOutlined /> {song.AlbumName || "未知专辑"}
-              </span>
-            </div>
-          </div>
-          <div className="song-actions">
-            <button
-              className="action-button glass-button play-btn"
-              onClick={() => onPlay(song)}
-            >
-              <PlayCircleOutlined />
-              播放
-            </button>
-            <button
-              className="action-button glass-button download-btn"
-              onClick={() => onDownload(song)}
-            >
-              <DownloadOutlined />
-              下载
-            </button>
-          </div>
-        </div>
+          song={song}
+          albumImage={albumImages[song.FileHash]}
+          onPlay={onPlay}
+          onDownload={onDownload}
+          isLast={index === songs.length - 1}
+          lastRef={lastRef}
+        />
       ))}
     </div>
+  );
+}, (prevProps, nextProps) => {
+  // 自定义比较函数：只在关键属性变化时重新渲染
+  return (
+    prevProps.songs.length === nextProps.songs.length &&
+    prevProps.songs.every((song, index) => 
+      song.FileHash === nextProps.songs[index]?.FileHash
+    ) &&
+    Object.keys(prevProps.albumImages).length === Object.keys(nextProps.albumImages).length &&
+    Object.keys(prevProps.albumImages).every(key => 
+      prevProps.albumImages[key] === nextProps.albumImages[key]
+    )
   );
 });
 
@@ -119,18 +155,31 @@ const Home = () => {
   const location = useLocation();
   const { searchKeyword, finishSearch } = useSearch();
 
-  // 批量获取专辑封面图片
+  // 批量获取专辑封面图片 - 优化：限制并发数和分批加载
   const fetchAlbumImagesBatch = async (songs) => {
     try {
-      // 收集所有请求
-      const imagePromises = songs.map(song => 
-        getAlbumImages(song.FileHash, song.AlbumID || "")
-          .then(res => ({ song, res }))
-          .catch(error => ({ song, error }))
-      );
+      // 限制并发数，避免一次性加载太多图片导致卡顿
+      const CONCURRENT_LIMIT = 5; // 每次最多5个并发请求
+      const results = [];
       
-      // 并行执行所有请求
-      const results = await Promise.all(imagePromises);
+      // 分批处理图片请求
+      for (let i = 0; i < songs.length; i += CONCURRENT_LIMIT) {
+        const batch = songs.slice(i, i + CONCURRENT_LIMIT);
+        const batchPromises = batch.map(song => 
+          getAlbumImages(song.FileHash, song.AlbumID || "")
+            .then(res => ({ song, res }))
+            .catch(error => ({ song, error }))
+        );
+        
+        // 等待当前批次完成
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+        
+        // 给浏览器一个喘息的机会，避免阻塞UI
+        if (i + CONCURRENT_LIMIT < songs.length) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
       
       // 处理结果并批量更新状态
       const newImages = {};
@@ -248,10 +297,16 @@ const Home = () => {
     }
   }, [location.search, searchSongs]);
 
-  // 当搜索关键词改变时自动搜索
+  // 当搜索关键词改变时自动搜索 - 使用防抖优化
   useEffect(() => {
-    searchSongs(1);
-  }, [searchSongs]); // 移除 searchSongs 依赖，避免函数变化导致重复执行
+    if (!searchKeyword?.trim()) return;
+    
+    const timeoutId = setTimeout(() => {
+      searchSongs(1);
+    }, 300); // 300ms 防抖延迟
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchKeyword]); // 只依赖 searchKeyword，避免 searchSongs 变化导致重复执行
 
   const loadMoreSongs = useCallback(() => {
     if (!hasMore || isLoading || isLazyLoading) return;
@@ -279,27 +334,25 @@ const Home = () => {
       const url = res.backupUrl[0];
 
       // 使用新的播放器上下文
-      playSong(
-        {
-          ...song,
-          title: song.OriSongName,
-          artist: song.SingerName,
-          album: song.AlbumName,
-          url: url,
-        },
-        songs,
-        songs.findIndex((s) => s.FileHash === song.FileHash)
-      );
+      playSong({
+        ...song,
+        title: song.OriSongName,
+        artist: song.SingerName,
+        album: song.AlbumName,
+        url: url,
+      });
     } catch (error) {
       console.error("播放失败:", error);
       message.error("播放失败，请稍后重试");
     }
   }, [playSong, songs]);
 
-  const handleDownload = useCallback(async (song) => {
+  const handleDownload = useCallback(async (song, event) => {
     try {
       // 显示下载中提示
-      const downloadBtn = event.target.closest(".action-button");
+      const downloadBtn = event?.target?.closest(".action-button");
+      if (!downloadBtn) return;
+      
       const originalText = downloadBtn.innerHTML;
       downloadBtn.innerHTML = '<span class="spinner"></span> 下载中...';
       downloadBtn.disabled = true;
@@ -315,14 +368,16 @@ const Home = () => {
       }
 
       // 恢复按钮状态
-      downloadBtn.innerHTML = originalText;
-      downloadBtn.disabled = false;
+      if (downloadBtn) {
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      }
     } catch (error) {
       console.error("下载失败:", error);
       message.error(`下载失败: ${error.message}`);
 
       // 恢复按钮状态
-      const downloadBtn = event.target.closest(".action-button");
+      const downloadBtn = event?.target?.closest(".action-button");
       if (downloadBtn) {
         const originalText = downloadBtn.innerHTML.replace(
           '<span class="spinner"></span> 下载中...',
@@ -332,7 +387,7 @@ const Home = () => {
         downloadBtn.disabled = false;
       }
     }
-  }, [downloadSong]);
+  }, []);
 
   return (
     <div className="home-container">

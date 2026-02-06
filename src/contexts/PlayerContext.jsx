@@ -1,5 +1,5 @@
 // src/contexts/PlayerContext.jsx
-import React, { createContext, useContext, useReducer, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useRef, useEffect, useCallback } from 'react';
 import { getAlbumImages } from '../services/api';
 
 // 初始化音频上下文（备用）
@@ -18,8 +18,6 @@ const initialState = {
   duration: 0,
   volume: 0.7,
   playbackRate: 1.0,
-  playlist: [],
-  currentIndex: -1,
   isLoading: false,
   error: null
 };
@@ -34,12 +32,8 @@ const ACTIONS = {
   SET_DURATION: 'SET_DURATION',
   SET_VOLUME: 'SET_VOLUME',
   SET_PLAYBACK_RATE: 'SET_PLAYBACK_RATE',
-  SET_PLAYLIST: 'SET_PLAYLIST',
-  SET_CURRENT_INDEX: 'SET_CURRENT_INDEX',
   SET_LOADING: 'SET_LOADING',
-  SET_ERROR: 'SET_ERROR',
-  NEXT_SONG: 'NEXT_SONG',
-  PREV_SONG: 'PREV_SONG'
+  SET_ERROR: 'SET_ERROR'
 };
 
 // Reducer 函数
@@ -95,23 +89,6 @@ const playerReducer = (state, action) => {
         playbackRate: action.payload
       };
     
-    case ACTIONS.SET_PLAYLIST:
-      return {
-        ...state,
-        playlist: action.payload,
-        currentIndex: action.payload.length > 0 ? 0 : -1
-      };
-    
-    case ACTIONS.SET_CURRENT_INDEX:
-      return {
-        ...state,
-        currentIndex: action.payload,
-        currentSong: action.payload >= 0 && action.payload < state.playlist.length 
-          ? state.playlist[action.payload] 
-          : null,
-        currentTime: 0
-      };
-    
     case ACTIONS.SET_LOADING:
       return {
         ...state,
@@ -124,34 +101,6 @@ const playerReducer = (state, action) => {
         error: action.payload,
         isLoading: false
       };
-    
-    case ACTIONS.NEXT_SONG: {
-      const nextIndex = state.currentIndex + 1;
-      if (nextIndex < state.playlist.length) {
-        return {
-          ...state,
-          currentIndex: nextIndex,
-          currentSong: state.playlist[nextIndex],
-          currentTime: 0,
-          isPlaying: true
-        };
-      }
-      return state;
-    }
-    
-    case ACTIONS.PREV_SONG: {
-      const prevIndex = state.currentIndex - 1;
-      if (prevIndex >= 0) {
-        return {
-          ...state,
-          currentIndex: prevIndex,
-          currentSong: state.playlist[prevIndex],
-          currentTime: 0,
-          isPlaying: true
-        };
-      }
-      return state;
-    }
     
     default:
       return state;
@@ -222,13 +171,8 @@ export const PlayerProvider = ({ children }) => {
   };
 
   // 播放器操作函数
-  const playSong = async (song, playlist = [], index = 0) => {
+  const playSong = async (song) => {
     dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-    
-    if (playlist.length > 0) {
-      dispatch({ type: ACTIONS.SET_PLAYLIST, payload: playlist });
-      dispatch({ type: ACTIONS.SET_CURRENT_INDEX, payload: index });
-    }
     
     // 获取专辑封面
     const albumCover = await fetchAlbumCover(song);
@@ -336,55 +280,33 @@ export const PlayerProvider = ({ children }) => {
     dispatch({ type: ACTIONS.SET_PLAYBACK_RATE, payload: validRate });
   };
 
-  const nextSong = () => {
-    if (state.currentIndex < state.playlist.length - 1) {
-      dispatch({ type: ACTIONS.NEXT_SONG });
-    }
-  };
-
-  const prevSong = () => {
-    if (state.currentIndex > 0) {
-      dispatch({ type: ACTIONS.PREV_SONG });
-    }
-  };
-
-  const setCurrentTime = (time) => {
+  const setCurrentTime = useCallback((time) => {
     dispatch({ type: ACTIONS.SET_TIME, payload: time });
-  };
+  }, [dispatch]);
 
-  const addToPlaylist = (songs) => {
-    const newPlaylist = [...state.playlist, ...songs];
-    dispatch({ type: ACTIONS.SET_PLAYLIST, payload: newPlaylist });
-  };
-
-  const clearPlaylist = () => {
-    dispatch({ type: ACTIONS.SET_PLAYLIST, payload: [] });
-    dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: null });
-    dispatch({ type: ACTIONS.PAUSE });
-    if (audioRef.current) {
-      audioRef.current.src = '';
-    }
-  };
-
-  // 音频事件处理
+  // 音频事件处理 - 使用节流优化性能
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    let lastUpdateTime = 0;
+    const UPDATE_INTERVAL = 100; // 每100ms更新一次，而不是每次timeupdate事件
+
     const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
+      const now = Date.now();
+      // 节流：限制更新频率
+      if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+        lastUpdateTime = now;
+        setCurrentTime(audio.currentTime);
+      }
     };
 
     const handleEnded = () => {
-      // 歌曲结束时自动播放下一首或暂停
-      if (state.currentIndex < state.playlist.length - 1) {
-        dispatch({ type: ACTIONS.NEXT_SONG });
-      } else {
-        dispatch({ type: ACTIONS.PAUSE });
-        // 播放完毕后清除当前歌曲，隐藏播放器
-        setTimeout(() => {
-          dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: null });
-        }, 1000); // 延迟1秒后关闭播放栏，让用户看到播放完成的状态
+      // 播放完毕后直接关闭播放器
+      dispatch({ type: ACTIONS.PAUSE });
+      dispatch({ type: ACTIONS.SET_CURRENT_SONG, payload: null });
+      if (audioRef.current) {
+        audioRef.current.src = '';
       }
     };
 
@@ -394,17 +316,30 @@ export const PlayerProvider = ({ children }) => {
       dispatch({ type: ACTIONS.PAUSE });
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
+    // 使用 requestAnimationFrame 进一步优化更新频率
+    let rafId = null;
+    const optimizedHandleTimeUpdate = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        handleTimeUpdate();
+        rafId = null;
+      });
+    };
+
+    audio.addEventListener('timeupdate', optimizedHandleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
     // 清理事件监听器
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      audio.removeEventListener('timeupdate', optimizedHandleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [state.currentIndex, state.playlist.length, dispatch, setCurrentTime]);
+  }, [dispatch, setCurrentTime]);
 
   // 同步音量设置
   useEffect(() => {
@@ -429,8 +364,6 @@ export const PlayerProvider = ({ children }) => {
     duration: state.duration,
     volume: state.volume,
     playbackRate: state.playbackRate,
-    playlist: state.playlist,
-    currentIndex: state.currentIndex,
     isLoading: state.isLoading,
     error: state.error,
     // 引用
@@ -446,11 +379,7 @@ export const PlayerProvider = ({ children }) => {
     seekTo,
     setVolume,
     setPlaybackRate,
-    nextSong,
-    prevSong,
-    setCurrentTime,
-    addToPlaylist,
-    clearPlaylist
+    setCurrentTime
   };
 
   return (
