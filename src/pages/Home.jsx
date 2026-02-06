@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
 import React, { useState, useRef, useCallback, useEffect, memo, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Spin, Empty, message    } from "antd";
+import { Spin, Empty, message, Progress } from "antd";
 import {
   PlayCircleOutlined,
   DownloadOutlined,
@@ -18,9 +18,10 @@ import {
 import { generateMusicFilename } from "../utils/filename";
 import { usePlayerActions } from "../contexts/PlayerContext";
 import { useSearch } from "../contexts/SearchContext";
+import { useDownloadActions, useDownloadState } from "../contexts/DownloadContext";
 
 // 单个歌曲项组件，使用memo优化
-const SongItem = memo(({ song, albumImage, onPlay, onDownload, isLast, lastRef }) => {
+const SongItem = memo(({ song, albumImage, onPlay, onDownload, isLast, lastRef, downloadProgress }) => {
   const handlePlay = useCallback(() => {
     onPlay(song);
   }, [song, onPlay]);
@@ -28,6 +29,42 @@ const SongItem = memo(({ song, albumImage, onPlay, onDownload, isLast, lastRef }
   const handleDownload = useCallback((e) => {
     onDownload(song, e);
   }, [song, onDownload]);
+
+  const progress = downloadProgress?.[song.FileHash];
+  // 显示进度条：当有进度记录且进度 >= 0 时（包括0%）
+  const isDownloading = progress !== undefined && progress !== null;
+  
+  // 格式化字节数为 MB
+  const formatBytesToMB = (bytes) => {
+    if (!bytes || bytes === 0) return '0 MB';
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  };
+
+  // 格式化剩余时间
+  const formatTimeRemaining = (seconds) => {
+    if (!seconds || seconds <= 0 || !isFinite(seconds)) return '';
+    
+    if (seconds < 60) {
+      return `${Math.ceil(seconds)}秒`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = Math.ceil(seconds % 60);
+      return `${minutes}分${secs}秒`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `${hours}小时${minutes}分钟`;
+    }
+  };
+
+  // 格式化下载速度
+  const formatSpeed = (speed) => {
+    if (!speed || speed <= 0) return '';
+    if (speed < 1) {
+      return `${(speed * 1024).toFixed(2)} KB/s`;
+    }
+    return `${speed.toFixed(2)} MB/s`;
+  };
 
   return (
     <div
@@ -65,6 +102,57 @@ const SongItem = memo(({ song, albumImage, onPlay, onDownload, isLast, lastRef }
             <DatabaseOutlined /> {song.AlbumName || "未知专辑"}
           </span>
         </div>
+        {/* 下载进度条 */}
+        {isDownloading && progress && (
+          <div className="download-progress-container" style={{ marginTop: '8px', width: '100%' }}>
+            <Progress
+              percent={progress.progress || 0}
+              size="small"
+              status={progress.progress === 100 ? "success" : "active"}
+              showInfo={true}
+              format={() => {
+                if (progress.progress === 100) {
+                  return `下载完成 ${formatBytesToMB(progress.total)}`;
+                }
+                if (progress.progress === 0) {
+                  return "准备下载...";
+                }
+                // 显示已下载 MB / 总 MB
+                const loadedMB = formatBytesToMB(progress.loaded);
+                if (progress.total > 0) {
+                  const totalMB = formatBytesToMB(progress.total);
+                  return `${loadedMB} / ${totalMB}`;
+                } else {
+                  // 如果总大小未知，只显示已下载的 MB
+                  return `已下载 ${loadedMB}`;
+                }
+              }}
+              strokeColor={
+                progress.progress === 100
+                  ? '#87d068'
+                  : {
+                      '0%': '#108ee9',
+                      '100%': '#87d068',
+                    }
+              }
+            />
+            {/* 下载速度和剩余时间信息 */}
+            {progress.progress > 0 && progress.progress < 100 && (
+              <div className="download-info">
+                <span>
+                  {progress.speed > 0 && (
+                    <>速度: {formatSpeed(progress.speed)}</>
+                  )}
+                </span>
+                <span>
+                  {progress.timeRemaining > 0 && (
+                    <>剩余: {formatTimeRemaining(progress.timeRemaining)}</>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="song-actions">
         <button
@@ -77,19 +165,46 @@ const SongItem = memo(({ song, albumImage, onPlay, onDownload, isLast, lastRef }
         <button
           className="action-button glass-button download-btn"
           onClick={handleDownload}
+          disabled={isDownloading}
         >
-          <DownloadOutlined />
-          下载
+          {isDownloading ? (
+            <>
+              <LoadingOutlined />
+              下载中
+            </>
+          ) : (
+            <>
+              <DownloadOutlined />
+              下载
+            </>
+          )}
         </button>
       </div>
     </div>
+  );
+}, (prevProps, nextProps) => {
+  // 自定义比较函数：返回 true 表示 props 相同（不需要重新渲染），false 表示需要重新渲染
+  const prevProgress = prevProps.downloadProgress?.[prevProps.song.FileHash];
+  const nextProgress = nextProps.downloadProgress?.[nextProps.song.FileHash];
+  
+  // 如果进度发生变化，需要重新渲染
+  if (prevProgress?.progress !== nextProgress?.progress) {
+    return false; // 需要重新渲染
+  }
+  
+  // 其他属性比较
+  return (
+    prevProps.song.FileHash === nextProps.song.FileHash &&
+    prevProps.albumImage === nextProps.albumImage &&
+    prevProps.onPlay === nextProps.onPlay &&
+    prevProps.onDownload === nextProps.onDownload
   );
 });
 
 SongItem.displayName = 'SongItem';
 
 // 独立的歌曲列表组件，使用memo优化渲染
-const SongList = memo(({ songs, albumImages, onPlay, onDownload, lastRef }) => {
+const SongList = memo(({ songs, albumImages, onPlay, onDownload, lastRef, downloadProgress }) => {
   if (songs.length === 0) {
     return (
       <div className="no-results glass-card">
@@ -121,6 +236,7 @@ const SongList = memo(({ songs, albumImages, onPlay, onDownload, lastRef }) => {
           onDownload={onDownload}
           isLast={index === songs.length - 1}
           lastRef={lastRef}
+          downloadProgress={downloadProgress}
         />
       ))}
     </div>
@@ -135,7 +251,8 @@ const SongList = memo(({ songs, albumImages, onPlay, onDownload, lastRef }) => {
     Object.keys(prevProps.albumImages).length === Object.keys(nextProps.albumImages).length &&
     Object.keys(prevProps.albumImages).every(key => 
       prevProps.albumImages[key] === nextProps.albumImages[key]
-    )
+    ) &&
+    JSON.stringify(prevProps.downloadProgress) === JSON.stringify(nextProps.downloadProgress)
   );
 });
 
@@ -154,6 +271,8 @@ const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { searchKeyword, finishSearch } = useSearch();
+  const { downloadProgress } = useDownloadState();
+  const { updateProgress, removeProgress } = useDownloadActions();
 
   // 批量获取专辑封面图片 - 优化：限制并发数和分批加载
   const fetchAlbumImagesBatch = async (songs) => {
@@ -348,46 +467,37 @@ const Home = () => {
   }, [playSong, songs]);
 
   const handleDownload = useCallback(async (song, event) => {
+    const hash = song.FileHash;
+    
     try {
-      // 显示下载中提示
-      const downloadBtn = event?.target?.closest(".action-button");
-      if (!downloadBtn) return;
-      
-      const originalText = downloadBtn.innerHTML;
-      downloadBtn.innerHTML = '<span class="spinner"></span> 下载中...';
-      downloadBtn.disabled = true;
-
       // 生成规范的文件名
       const filename = generateMusicFilename(song);
 
-      // 使用axios下载
-      const result = await downloadSong(song.FileHash, filename);
+      // 创建进度回调函数
+      const progressCallback = (progress, filename, loaded, total) => {
+        updateProgress(hash, progress, filename, loaded, total);
+      };
+
+      // 使用axios下载，传入进度回调
+      const result = await downloadSong(hash, filename, progressCallback);
 
       if (result.success) {
         console.log(`下载成功: ${result.filename}`);
-      }
-
-      // 恢复按钮状态
-      if (downloadBtn) {
-        downloadBtn.innerHTML = originalText;
-        downloadBtn.disabled = false;
+        message.success(`下载成功: ${result.filename}`);
+        
+        // 延迟移除进度，让用户看到100%完成
+        setTimeout(() => {
+          removeProgress(hash);
+        }, 1000);
       }
     } catch (error) {
       console.error("下载失败:", error);
       message.error(`下载失败: ${error.message}`);
-
-      // 恢复按钮状态
-      const downloadBtn = event?.target?.closest(".action-button");
-      if (downloadBtn) {
-        const originalText = downloadBtn.innerHTML.replace(
-          '<span class="spinner"></span> 下载中...',
-          "📥 下载"
-        );
-        downloadBtn.innerHTML = originalText;
-        downloadBtn.disabled = false;
-      }
+      
+      // 移除进度显示
+      removeProgress(hash);
     }
-  }, []);
+  }, [updateProgress, removeProgress]);
 
   return (
     <div className="home-container">
@@ -411,6 +521,7 @@ const Home = () => {
               onPlay={handlePlaySong}
               onDownload={handleDownload}
               lastRef={lastSongElementRef}
+              downloadProgress={downloadProgress}
             />
           </Spin>
 

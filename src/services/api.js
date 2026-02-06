@@ -88,7 +88,7 @@ export const request = async (endpoint, options = {}) => {
 export const getSongUrl = (hash) => request(`/song/url?hash=${hash}&quality=320`);
 
 // 基于axios的文件下载功能
-export const downloadSong = async (hash, filename) => {
+export const downloadSong = async (hash, filename, onProgress) => {
   try {
     // 获取歌曲URL
     const songData = await getSongUrl(hash);
@@ -100,6 +100,14 @@ export const downloadSong = async (hash, filename) => {
     const downloadUrl = songData.backupUrl[0];
     const extension = songData.extName || 'mp3';
     
+    // 生成最终文件名
+    const finalFilename = filename || `歌曲_${Date.now()}.${extension}`;
+    
+    // 初始化进度
+    if (onProgress) {
+      onProgress(0, finalFilename, 0, 0);
+    }
+    
     // 使用axios下载文件
     const response = await axios({
       method: 'GET',
@@ -107,11 +115,19 @@ export const downloadSong = async (hash, filename) => {
       responseType: 'blob',
       timeout: 60000, // 60秒超时
       onDownloadProgress: (progressEvent) => {
-        // 可以在这里添加下载进度回调
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        console.log(`下载进度: ${percentCompleted}%`);
+        let percentCompleted = 0;
+        const loaded = progressEvent.loaded || 0;
+        const total = progressEvent.total || 0;
+        
+        if (total > 0) {
+          percentCompleted = Math.round((loaded * 100) / total);
+        }
+        
+        // 调用进度回调函数，传递百分比、文件名、已下载字节数、总字节数
+        if (onProgress) {
+          onProgress(percentCompleted, finalFilename, loaded, total);
+        }
+        console.log(`下载进度: ${percentCompleted}% (已下载: ${(loaded / 1024 / 1024).toFixed(2)} MB / 总计: ${total > 0 ? (total / 1024 / 1024).toFixed(2) : '未知'} MB)`);
       }
     });
     
@@ -119,9 +135,6 @@ export const downloadSong = async (hash, filename) => {
     const blob = new Blob([response.data], {
       type: response.headers['content-type'] || 'audio/mpeg'
     });
-    
-    // 生成最终文件名
-    const finalFilename = filename || `歌曲_${Date.now()}.${extension}`;
     
     // 触发下载
     const url = window.URL.createObjectURL(blob);
@@ -139,11 +152,21 @@ export const downloadSong = async (hash, filename) => {
       window.URL.revokeObjectURL(url);
     }, 100);
     
+    // 下载完成，进度设为100%
+    if (onProgress && response.data) {
+      const totalSize = response.data.size || 0;
+      onProgress(100, finalFilename, totalSize, totalSize);
+    }
+    
     console.log(`下载完成: ${finalFilename}`);
     return { success: true, filename: finalFilename };
     
   } catch (error) {
     console.error('下载失败:', error);
+    // 下载失败时，移除进度
+    if (onProgress) {
+      onProgress(0, '');
+    }
     throw new Error(`下载失败: ${error.message}`);
   }
 };
