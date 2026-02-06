@@ -2,11 +2,12 @@
 
 基于 Web 的酷狗音乐 MP3 下载工具，支持搜索、试听与下载高品质 MP3（320kbps）。
 
+**在线访问**：[http://nginx.cxy0721.dpdns.org/](http://nginx.cxy0721.dpdns.org/)
+
 ## 功能说明
 
 - **MP3 下载**：支持将酷狗音乐以 MP3 格式下载到本地
 - **搜索与试听**：搜索歌曲、在线试听
-- **歌单与收藏**：登录后可访问个人歌单
 
 ## 重要说明
 
@@ -93,4 +94,5 @@ npm run build
 
 ## 相关链接
 
+- **在线访问**：[http://nginx.cxy0721.dpdns.org/](http://nginx.cxy0721.dpdns.org/)
 - 后端 API 项目：[KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
