@@ -22,6 +22,14 @@ export default defineConfig(({ mode }) => {
             port: 5173, // 端口号
             strictPort: true, // 端口被占用时，是否停止服务
             open: true, // 启动服务时是否自动打开浏览器
+            // 配置后端代理服务器（后端 KuGouMusicApi 默认运行在 localhost:3000）
+            proxy: {
+                '/api': {
+                    target: 'http://localhost:3000',
+                    changeOrigin: true,
+                    rewrite: (path) => path.replace(/^\/api/, ''),
+                },
+            },
         },
         resolve: {
             alias: {
@@ -43,5 +51,6 @@ export default defineConfig(({ mode }) => {
                 },
             },
         },
+
     };
 });
